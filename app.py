@@ -14,7 +14,7 @@ app = Flask(__name__)
 
 app.config['SECRET_KEY'] = 'This is secret'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////Users/zy/Desktop/Files/projects/flaskapp/database.db'
-cors = CORS(app, resources={r"/register": {"origins": "http://localhost:8080"}})
+cors = CORS(app, resources={r"/login": {"origins": "http://localhost:8080"}})
 
 Bootstrap(app)
 db = SQLAlchemy(app)
@@ -40,33 +40,41 @@ class RegisterForm(FlaskForm):
     email = StringField('email', validators=[InputRequired(), Email(message='Invalid email'), Length(max=50)])
     password = PasswordField('password', validators=[InputRequired(), Length(min=8, max=80)])
 
-@app.route('/register', methods=['GEt', 'POST'])
+@app.route('/register', methods=['GET', 'POST'])
 @cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
 def register():
     request_json = request.get_json()
     data = request_json['data']
     email = data['email']
     password = data['password']
-    print email
-    print password
-    new_user = User(email=email, password=password)
-    db.session.add(new_user)
-    db.session.commit()
+    try:
+        new_user = User(email=email, password=password)
+        db.session.add(new_user)
+        db.session.commit()
+        db.session.close()
+        status = 'success'
+    except:
+        status = 'this user is already registered'
     return 'OK'
 
 @app.route('/login', methods=['GET', 'POST'])
+@cross_origin(origin='localhost',headers=['Content- Type','Authorization'])
 def login():
-    form = LoginForm()
+    request_json = request.get_json()
+    data = request_json['data']
+    email = data['email']
+    password = data['password']
 
-    if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
-        if user:
-            if check_password_hash(user.password, form.password.data):
-                login_user(user, remember=form.remember.data)
-                return redirect(url_for('dashboard'))
-        return '<h1> Invalid email or password </h1>'
-
-    return render_template('login.html', form=form)
+    user = User.query.filter_by(email=email).first()
+    status = False
+    if user:
+        if user.password == password:
+            login_user(user)
+            print 'logged in'
+            status = True
+        else:
+            print 'cant log in'
+    return jsonify({'result': status})
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -94,4 +102,4 @@ def logout():
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=8080)
