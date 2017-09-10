@@ -4,19 +4,30 @@ from wtforms.validators import InputRequired, Email, Length
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_cors import CORS, cross_origin
 from functools import wraps
-from index import app, db
 from .utils.auth import generate_token, requires_auth, verify_token
 from flask import request, render_template, jsonify, url_for, redirect, g
 from index import app, db
 from sqlalchemy.exc import IntegrityError
 from .models import User
-CORS(app, support_credentials=True)
+from index import  bcrypt
+import pyrebase
 
-# @login_manager.unauthorized_handler
-# def unauthorized():
-#     # do stuff
-#     status = False
-#     return jsonify({'result': status})
+
+config = {
+  'apiKey': "AIzaSyBAdbuh9uT22E-eV9tGJRW3tUOksPI-DuA",
+  'authDomain': "cryptofolio-63e51.firebaseapp.com",
+  'databaseURL': "https://cryptofolio-63e51.firebaseio.com",
+  'projectId': "cryptofolio-63e51",
+  'storageBucket': "cryptofolio-63e51.appspot.com",
+  'messagingSenderId': "1043732935820",
+  "serviceAccount": "application/utils/cryptofolio-63e51-firebase-adminsdk-qyyy2-45e3a5a728.json"
+}
+
+firebase = pyrebase.initialize_app(config)
+# Get a reference to the database service
+db = firebase.database()
+
+CORS(app, support_credentials=True)
 
 @cross_origin(supports_credentials=True)
 def redirect_to_signin():
@@ -43,13 +54,15 @@ def register():
     email = data['email']
     password = data['password']
     try:
-        new_user = User(email=email, password=password)
-        db.session.add(new_user)
-        db.session.commit()
-        db.session.close()
-        status = 'success'
-    except:
-        status = 'this user is already registered'
+        all_users = db.child("users").get()
+        for user in all_users.each():
+            user_val = user.val()
+            user_email = user_val['email']
+            if user_email == email:
+                raise Exception('user already registered')
+        db.child("users").push(data)
+    except Exception as error:
+        print error
     return 'OK'
 
 @app.route('/login', methods=['GET', 'POST'])
