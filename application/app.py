@@ -72,11 +72,33 @@ def login():
     data = request_json['data']
     email = data['email']
     password = data['password']
-    user = User.get_user_with_email_and_password(email, password)
-    if user:
-        return jsonify(token=generate_token(user))
+    try:
+        all_users = db.child("users").get()
+        for user in all_users.each():
+            user_val = user.val()
+            user_email = user_val['email']
+            user_password = user_val['password']
+            if user_email == email and user_password == password:
+                verified_user = {
+                    'email': user_email,
+                    'password': user_password,
 
-    return jsonify(error=True), 403
+                }
+                return jsonify(token=generate_token(verified_user))
+            else:
+                return jsonify(error=True), 403
+    except Exception as error:
+        print error
+    return 'OK'
+    # request_json = request.get_json()
+    # data = request_json['data']
+    # email = data['email']
+    # password = data['password']
+    # user = User.get_user_with_email_and_password(email, password)
+    # if user:
+    #     return jsonify(token=generate_token(user))
+    #
+    # return jsonify(error=True), 403
     #
     # request_json = request.get_json()
     # data = request_json['data']
