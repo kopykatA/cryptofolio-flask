@@ -1,1 +1,3 @@
-# coinrunner-flask
+# Cryptofolio
+
+Currently in development
