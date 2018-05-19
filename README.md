@@ -1,6 +1,8 @@
 # Cryptofolio
 
-Currently in development
+Easily manage and monitor your crypto trades at a glance.
+
+React code can be viewed here: https://github.com/zyam/cryptofolio-react
 
 To run server:
 
